@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Medical Report Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: sans-serif;
+        background: #1e1e2f;
+        color: #ffffff;
+        display: flex;
+        justify-content: center;
+        align-items: start;
+        min-height: 100vh;
+        overflow-y: auto;
+        margin: 0;
+        padding: 40px 0;
+      }
+
+      .container {
+        background: #2a2a3c;
+        border-radius: 12px;
+        padding: 20px;
+        width: 600px;
+        max-width: 90%;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+      }
+
+      h2 {
+        color: #ffffff;
+        text-align: center;
+        font-size: 26px;
+        margin-bottom: 20px;
+        margin-top: 0px;
+      }
+
+      h3 {
+        color: #ffffff;
+        font-size: 20px;
+      }
+
+      label {
+        font-size: 14px;
+        color: #cccccc;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file-upload {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #4a4a5e;
+        border-radius: 8px;
+        padding: 20px;
+        cursor: pointer;
+        text-align: center;
+        color: #cccccc;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+
+      .file-upload:hover {
+        background: #3a3a4e;
+      }
+
+      .action-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        background: #006eff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+        margin-top: 10px;
+      }
+
+      button:hover {
+        background: #0056cc;
+      }
+
+      #fileInfo {
+        font-size: 14px;
+        color: #cccccc;
+        word-break: break-word;
+        max-width: 100%;
+        margin-top: 10px;
+        text-align: right;
+      }
+
+      #result {
+        white-space: pre-wrap;
+        border: 1px solid #4a4a5e;
+        padding: 10px;
+        min-height: 200px;
+        background: #1e1e2f;
+        color: #ffffff;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+
+      /* Responsive styles for smaller screens */
+      @media screen and (max-width: 600px) {
+        .container {
+          width: 95%;
+          padding: 16px;
+        }
+
+        h2 {
+          font-size: 22px;
+        }
+
+        h3 {
+          font-size: 18px;
+        }
+
+        button {
+          width: 100%;
+        }
+
+        .action-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        #fileInfo {
+          text-align: center;
+          margin-top: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Medical Report Analyzer</h2>
+      <label for="pdfFile">Upload Medical Report PDF (Max 20MB)</label>
+      <div
+        class="file-upload"
+        onclick="document.getElementById('pdfFile').click()"
+      >
+        Drag and drop file here<br />or<br />Browse files
+      </div>
+      <input type="file" id="pdfFile" accept="application/pdf" />
+
+      <div class="action-row">
+        <button onclick="analyze()">Analyze</button>
+        <div id="fileInfo"></div>
+      </div>
+
+      <h3>Analysis Result:</h3>
+      <div id="result">
+        <!-- Analysis result will be shown here -->
+      </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById("pdfFile");
+      const fileInfoDiv = document.getElementById("fileInfo");
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (file) {
+          const sizeKB = (file.size / 1024).toFixed(1);
+          fileInfoDiv.textContent = `${file.name} - ${sizeKB}KB`;
+        } else {
+          fileInfoDiv.textContent = "";
+        }
+      });
+
+      async function extractTextFromPDF(file) {
+        const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file))
+          .promise;
+        let text = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map((item) => item.str).join(" ") + "\n";
+        }
+        return text;
+      }
+
+      function formatMarkdownToHTML(text) {
+        // Handle bold text
+        text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+        // Convert * bullet points to <ul><li>
+        const lines = text.split("\n");
+        let inList = false;
+        let formatted = "";
+
+        lines.forEach((line) => {
+          if (line.trim().startsWith("* ")) {
+            if (!inList) {
+              formatted += "<ul>";
+              inList = true;
+            }
+            const item = line.trim().substring(2);
+            formatted += `<li>${item}</li>`;
+          } else {
+            if (inList) {
+              formatted += "</ul>";
+              inList = false;
+            }
+            formatted += line + "<br>";
+          }
+        });
+
+        if (inList) formatted += "</ul>";
+        return formatted;
+      }
+
+      async function analyze() {
+        const file = fileInput.files[0];
+        const resultBox = document.getElementById("result");
+        if (!file) return alert("Please upload a PDF");
+
+        resultBox.innerHTML = "Extracting text...";
+        const extractedText = await extractTextFromPDF(file);
+
+        resultBox.innerHTML = "Sending to AI...";
+        const response = await fetch("http://127.0.0.1:5000/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: extractedText }),
+        });
+
+        const data = await response.json();
+        resultBox.innerHTML = formatMarkdownToHTML(
+          data.response || `Error: ${data.error}`
+        );
+
+        const disclaimer = document.createElement("div");
+        disclaimer.innerHTML = `⚠️ <strong>Disclaimer:</strong> This summary is generated by an AI model based on the uploaded medical report. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider for clinical decisions.`;
+        disclaimer.style.marginTop = "20px";
+        disclaimer.style.padding = "12px";
+        disclaimer.style.backgroundColor = "#3a3a4e";
+        disclaimer.style.borderLeft = "4px solid #ffcc00";
+        disclaimer.style.borderRadius = "6px";
+        disclaimer.style.color = "#fff";
+        disclaimer.style.fontSize = "14px";
+
+        resultBox.appendChild(disclaimer);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>
