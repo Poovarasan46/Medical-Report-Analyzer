@@ -19,7 +19,7 @@ def home():
     return render_template("index.html")
 
 # Handle analysis request
-@app.route("/analyze", methods=["POST"])
+@app.route("/api/analyze", methods=["POST"])
 def analyze():
     data = request.get_json()
     user_text = data.get("text", "")
