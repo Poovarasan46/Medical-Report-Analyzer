@@ -11,8 +11,8 @@
       "dest": "api/index.py"
     },
     {
-      "src": "/(.*)",
-      "dest": "/templates/index.html"
+      "src": "/",
+      "dest": "api/index.py"
     }
   ]
 }
