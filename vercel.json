@@ -1,8 +1,18 @@
 {
-  "version": 2,
-  "builds": [{ "src": "api/index.py", "use": "@vercel/python" }],
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
   "routes": [
-    { "src": "/analyze", "methods": ["POST"], "dest": "api/index.py" },
-    { "src": "/", "methods": ["GET"], "dest": "api/index.py" }
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/templates/index.html"
+    }
   ]
 }
