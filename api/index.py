@@ -26,15 +26,65 @@ def analyze():
 
     # Enhanced prompt to get detailed analysis, including patient and doctor information
     prompt = f"""
-    You are a helpful medical assistant. Analyze the following medical report and provide a detailed analysis, including the following:
+    You are an expert medical analyst with comprehensive knowledge of laboratory medicine, hematology, and gastroenterology. 
+
+    If this is a follow-up question about a report you've already analyzed, refer to your previous analysis and focus on answering the specific question while maintaining consistency with your earlier findings.
+
+    When analyzing a new blood report, consider:
     1. Identify the disease or condition the patient is suffering from.
     2. Extract and list any patient-related information such as name, age, gender, or other relevant details.
     3. Extract and list any doctor or healthcare professional information (name, specialization, etc.) present in the report.
     4. Identify any hospital or healthcare facility mentioned in the report.
-    5. Provide a clear, easy-to-understand explanation of the disease or condition.
-    6. Offer specific instructions or recommendations for the patient to manage or treat the condition, including lifestyle changes, medications, additional tests, or further actions.
-    7. Summarize the next steps for the patient to take in terms of follow-up appointments or additional care needed.
 
+    1. Complete Blood Count (CBC)
+       - Anemia, Polycythemia
+       - Leukemia, Infections
+       - Thrombocytopenia, Thrombocytosis
+
+    2. Liver function tests (ALT, AST, ALP, Bilirubin)
+       - Hepatitis
+       - Cirrhosis
+       - Fatty Liver Disease
+       - Cholestasis
+
+    3. Pancreatic markers (Amylase, Lipase)
+       - Pancreatitis
+       - Pancreatic Cancer
+
+    4. Metabolic Panel
+       - Diabetes
+       - Kidney Disease
+       - Electrolyte Imbalances
+
+    5. Lipid Profile
+       - Hyperlipidemia
+       - Atherosclerosis
+       - Metabolic Syndrome
+
+    6. Common Infections & Diseases
+       - Bacterial Infections
+       - Viral Infections
+       - Thyroid Disorders
+       - Autoimmune Conditions
+       - Nutritional Deficiencies
+       - Allergies
+       - Inflammatory Conditions
+
+    Based on the provided blood report, provide a single comprehensive analysis in the following format:
+
+    - **Potential Health Risks:**
+      - [List specific conditions the patient might be at risk for]
+      - [Include risk level: Low/Medium/High]
+      - [Supporting evidence from blood values]
+
+    - **Recommendations:**
+      - [Lifestyle modifications needed]
+      - [Dietary recommendations]
+      - [Follow-up tests required]
+      - [Preventive measures]
+      - [Urgency of medical consultation if needed]
+
+    Note: Focus on early detection and prevention. Explain how current blood values might indicate future health risks and what can be done to prevent them.
     Medical Report:
     {user_text}
     """
