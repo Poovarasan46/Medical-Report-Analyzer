@@ -18,7 +18,7 @@ Medical Report Analyzer is a web-based tool that allows users to upload medical 
 
 ## 📹 Demo
 
-https://github.com/user-attachments/assets/b5b6fdee-1236-4753-8de1-220ed530eeb4
+[https://github.com/user-attachments/assets/b5b6fdee-1236-4753-8de1-220ed530eeb4](https://github.com/user-attachments/assets/6c51a9fd-2e67-424f-adb8-789034575fbd)
 
 ---
 
