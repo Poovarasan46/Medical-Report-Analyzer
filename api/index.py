@@ -21,7 +21,8 @@ CORS(app)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = os.getenv("GROQ_MODEL", "").strip() or DEFAULT_GROQ_MODEL
 MAX_REPORT_CHARS = int(os.getenv("MAX_REPORT_CHARS", "45000"))
 REQUEST_TIMEOUT_SECONDS = int(os.getenv("GROQ_TIMEOUT_SECONDS", "70"))
 MAX_COMPLETION_TOKENS = int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", "4096"))
