@@ -1,302 +1,1064 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Medical Report Analyzer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
+      :root {
+        --bg: #edf7f2;
+        --surface: #ffffff;
+        --surface-soft: #f7fbf8;
+        --ink: #1e293b;
+        --muted: #64748b;
+        --line: #cfe9dc;
+        --green: #159947;
+        --green-dark: #0d7634;
+        --teal: #0f766e;
+        --amber: #b7791f;
+        --red: #b42318;
+        --blue: #2563eb;
+        --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       html {
         scroll-behavior: smooth;
       }
 
       body {
-        font-family: sans-serif;
-        background: #e8f8ef;
-        color: #333333;
-        display: flex;
-        justify-content: center;
-        align-items: start;
-        min-height: 100vh;
-        overflow-y: auto;
         margin: 0;
-        padding: 40px 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
       }
 
-      .container {
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 20px;
-        width: 900px;
-        max-width: 95%;
-        box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 32px auto;
+      }
+
+      .shell {
+        background: var(--surface);
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 28px;
+      }
+
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        margin-bottom: 28px;
+        text-align: center;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 2px solid #9bdcbb;
+        color: var(--green);
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 0;
+        color: var(--green);
+        font-size: 34px;
+        line-height: 1.15;
       }
 
       h2 {
-        color: #2bae66;
-        text-align: center;
-        font-size: 26px;
-        margin-bottom: 20px;
-        margin-top: 0px;
+        color: var(--green);
+        font-size: 24px;
+        line-height: 1.25;
+        margin-bottom: 16px;
       }
 
       h3 {
-        color: #2bae66;
-        font-size: 20px;
+        color: var(--teal);
+        font-size: 18px;
+        line-height: 1.3;
+        margin-bottom: 12px;
       }
 
-      label {
-        font-size: 14px;
-        color: #666666;
+      .upload-label {
+        display: block;
+        color: #475569;
+        margin-bottom: 10px;
       }
 
       input[type="file"] {
         display: none;
       }
 
-      .file-upload {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px dashed #b4e9ce;
+      .drop-zone {
+        display: grid;
+        place-items: center;
+        min-height: 122px;
+        border: 2px dashed #9bdcbb;
         border-radius: 8px;
-        padding: 20px;
+        background: #f4fcf7;
+        color: var(--green);
         cursor: pointer;
         text-align: center;
-        color: #2bae66;
-        margin-top: 10px;
-        flex-wrap: wrap;
-        transition: background 0.3s;
-        background-color: #f6fffa;
+        padding: 22px;
+        transition:
+          border-color 0.2s ease,
+          background 0.2s ease,
+          transform 0.2s ease;
       }
 
-      .file-upload.dragover {
-        background: #dff5ea;
+      .drop-zone:hover,
+      .drop-zone:focus-visible,
+      .drop-zone.dragover {
+        background: #e8f8ef;
+        border-color: var(--green);
+        outline: none;
+      }
+
+      .drop-title {
+        display: block;
+        font-size: 20px;
+        margin-bottom: 6px;
+      }
+
+      .drop-subtitle {
+        color: var(--muted);
+        font-size: 14px;
       }
 
       .action-row {
         display: flex;
         align-items: center;
+        gap: 14px;
         justify-content: space-between;
-        margin-top: 10px;
+        margin-top: 18px;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
         flex-wrap: wrap;
       }
 
-      button {
-        background: #16a34a;
-        color: white;
-        padding: 10px 20px;
-        border: none;
+      .btn {
+        min-height: 46px;
+        border: 0;
         border-radius: 8px;
         cursor: pointer;
-        font-size: 15px;
-        margin-top: 10px;
-        transition: background 0.3s;
+        color: #ffffff;
+        background: var(--green);
+        padding: 0 22px;
+        font-weight: 700;
+        transition:
+          background 0.2s ease,
+          opacity 0.2s ease;
       }
 
-      button:hover {
-        background: #168243;
+      .btn:hover {
+        background: var(--green-dark);
       }
 
-      #fileInfo {
-        font-size: 14px;
-        color: #666666;
-        word-break: break-word;
-        max-width: 100%;
-        margin-top: 10px;
+      .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .btn.secondary {
+        color: var(--ink);
+        background: #e2e8f0;
+      }
+
+      .btn.secondary:hover {
+        background: #cbd5e1;
+      }
+
+      .file-info {
+        min-width: 0;
+        color: #475569;
         text-align: right;
+        word-break: break-word;
       }
 
-      #result {
-        white-space: pre-wrap;
-        border: 1px solid #b4e9ce;
-        padding: 10px;
-        min-height: 200px;
-        background: #fafffb;
-        color: #333333;
+      .status {
+        display: none;
+        margin-top: 16px;
         border-radius: 8px;
-        margin-top: 20px;
+        border: 1px solid var(--line);
+        background: var(--surface-soft);
+        padding: 12px 14px;
+        color: #334155;
       }
 
-      /* Disclaimer Box */
-      .disclaimer {
-        margin-top: 20px;
-        padding: 12px;
-        background-color: #fff9e6;
-        border-left: 4px solid #ffcc00;
+      .status.visible {
+        display: block;
+      }
+
+      .status.error {
+        border-color: #fecaca;
+        background: #fff5f5;
+        color: var(--red);
+      }
+
+      .status.success {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: var(--green-dark);
+      }
+
+      .safety-banner {
+        margin-top: 18px;
+        border-left: 4px solid var(--amber);
         border-radius: 6px;
-        color: #444;
-        font-size: 14px;
+        background: #fffbeb;
+        color: #594214;
+        padding: 12px 14px;
+        line-height: 1.45;
       }
 
-      /* Responsive styles */
-      @media screen and (max-width: 600px) {
-        .container {
-          width: 85%;
-          padding: 16px;
+      .results {
+        margin-top: 28px;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 14px;
+        min-height: 96px;
+      }
+
+      .metric-label {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+
+      .metric-value {
+        color: var(--ink);
+        font-size: 16px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .result-section {
+        border-top: 1px solid var(--line);
+        padding-top: 20px;
+        margin-top: 20px;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 8px 14px;
+        margin: 0;
+      }
+
+      dt {
+        color: var(--muted);
+      }
+
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+        background: #ffffff;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #e2e8f0;
+        text-align: left;
+        vertical-align: top;
+        line-height: 1.45;
+      }
+
+      th {
+        color: #334155;
+        background: #f8fafc;
+        font-size: 13px;
+        text-transform: uppercase;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 26px;
+        border-radius: 999px;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: capitalize;
+        white-space: nowrap;
+      }
+
+      .badge.normal,
+      .badge.low-risk,
+      .badge.routine,
+      .badge.high-confidence {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .badge.high,
+      .badge.medium-risk,
+      .badge.soon,
+      .badge.medium-confidence {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .badge.low,
+      .badge.unknown,
+      .badge.unknown-risk,
+      .badge.unknown-confidence {
+        background: #e0f2fe;
+        color: #075985;
+      }
+
+      .badge.critical,
+      .badge.high-risk,
+      .badge.urgent {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .list-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 14px;
+      }
+
+      .item-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .item-title {
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .item-body {
+        color: #334155;
+        line-height: 1.5;
+      }
+
+      .empty {
+        color: var(--muted);
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 14px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 900px) {
+        .summary-grid,
+        .detail-grid {
+          grid-template-columns: 1fr;
         }
 
-        h2 {
-          font-size: 22px;
+        .shell {
+          padding: 20px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(100% - 20px, 1180px);
+          margin: 10px auto;
         }
 
-        h3 {
-          font-size: 18px;
+        .app-header {
+          align-items: flex-start;
+          justify-content: flex-start;
+          text-align: left;
         }
 
-        button {
-          width: 100%;
+        h1 {
+          font-size: 26px;
         }
 
         .action-row {
-          flex-direction: column;
           align-items: stretch;
+          flex-direction: column;
         }
 
-        #fileInfo {
-          text-align: center;
-          margin-top: 10px;
+        .button-group,
+        .btn {
+          width: 100%;
+        }
+
+        .file-info {
+          text-align: left;
+        }
+
+        dl {
+          grid-template-columns: 1fr;
+          gap: 4px;
         }
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h2>🩺 Medical Report Analyzer</h2>
-      <label for="pdfFile">Upload Medical Report PDF (Max 20MB)</label>
-      <div class="file-upload" id="dropZone">
-        Drag and drop file here<br />or<br />Click to browse
-      </div>
-      <input type="file" id="pdfFile" accept="application/pdf" />
+    <main class="page">
+      <section class="shell">
+        <header class="app-header">
+          <span class="brand-mark" aria-hidden="true">+</span>
+          <h1>Medical Report Analyzer</h1>
+        </header>
 
-      <div class="action-row">
-        <button onclick="analyze()">Analyze</button>
-        <div id="fileInfo"></div>
-      </div>
+        <label class="upload-label" for="pdfFile"
+          >Upload medical report PDF (max 20MB)</label
+        >
+        <div
+          class="drop-zone"
+          id="dropZone"
+          role="button"
+          tabindex="0"
+          aria-controls="pdfFile"
+        >
+          <span>
+            <span class="drop-title">Drag and drop a PDF here</span>
+            <span class="drop-subtitle">or click to browse</span>
+          </span>
+        </div>
+        <input type="file" id="pdfFile" accept="application/pdf" />
 
-      <h3>Analysis Result:</h3>
-      <div id="result">
-        <!-- Analysis result will be shown here -->
-      </div>
-    </div>
+        <div class="action-row">
+          <div class="button-group">
+            <button class="btn" id="analyzeButton" type="button">
+              Analyze report
+            </button>
+            <button class="btn secondary" id="clearButton" type="button" hidden>
+              Clear
+            </button>
+          </div>
+          <div class="file-info" id="fileInfo">No file selected</div>
+        </div>
+
+        <div
+          class="status"
+          id="statusBox"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <p class="safety-banner">
+          This tool summarizes report text with AI. It may miss details or make
+          mistakes, and it is not a substitute for diagnosis or treatment from a
+          qualified healthcare professional.
+        </p>
+
+        <section class="results" id="results" hidden>
+          <h2>Analysis Result</h2>
+          <div class="summary-grid" id="summaryGrid"></div>
+
+          <section class="result-section">
+            <div class="detail-grid">
+              <div>
+                <h3>Patient Details</h3>
+                <dl id="patientDetails"></dl>
+              </div>
+              <div>
+                <h3>Provider Details</h3>
+                <dl id="providerDetails"></dl>
+              </div>
+            </div>
+          </section>
+
+          <section class="result-section">
+            <h3>Key Findings</h3>
+            <div id="findings"></div>
+          </section>
+
+          <section class="result-section">
+            <h3>Possible Concerns</h3>
+            <div class="stack" id="concerns"></div>
+          </section>
+
+          <section class="result-section">
+            <h3>Recommended Next Steps</h3>
+            <div class="stack" id="recommendations"></div>
+          </section>
+
+          <section class="result-section">
+            <h3>Urgent Flags</h3>
+            <div class="stack" id="urgentFlags"></div>
+          </section>
+
+          <section class="result-section">
+            <h3>Questions For Your Clinician</h3>
+            <div class="stack" id="followUpQuestions"></div>
+          </section>
+
+          <section class="result-section">
+            <h3>Safety Note</h3>
+            <p class="item-body" id="safetyNote"></p>
+          </section>
+        </section>
+      </section>
+    </main>
 
     <script>
-      const fileInput = document.getElementById("pdfFile");
-      const fileInfoDiv = document.getElementById("fileInfo");
-      const fileUploadBox = document.getElementById("dropZone");
+      const MAX_FILE_BYTES = 20 * 1024 * 1024;
+      const PDF_WORKER_SRC =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
 
-      fileUploadBox.addEventListener("click", () => {
-        fileInput.click();
-      });
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC;
+      }
 
-      fileUploadBox.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        fileUploadBox.classList.add("dragover");
-      });
+      const elements = {
+        fileInput: document.getElementById("pdfFile"),
+        dropZone: document.getElementById("dropZone"),
+        fileInfo: document.getElementById("fileInfo"),
+        analyzeButton: document.getElementById("analyzeButton"),
+        clearButton: document.getElementById("clearButton"),
+        statusBox: document.getElementById("statusBox"),
+        results: document.getElementById("results"),
+        summaryGrid: document.getElementById("summaryGrid"),
+        patientDetails: document.getElementById("patientDetails"),
+        providerDetails: document.getElementById("providerDetails"),
+        findings: document.getElementById("findings"),
+        concerns: document.getElementById("concerns"),
+        recommendations: document.getElementById("recommendations"),
+        urgentFlags: document.getElementById("urgentFlags"),
+        followUpQuestions: document.getElementById("followUpQuestions"),
+        safetyNote: document.getElementById("safetyNote"),
+      };
 
-      fileUploadBox.addEventListener("dragleave", (e) => {
-        e.preventDefault();
-        fileUploadBox.classList.remove("dragover");
-      });
+      let selectedFile = null;
 
-      fileUploadBox.addEventListener("drop", (e) => {
-        e.preventDefault();
-        fileUploadBox.classList.remove("dragover");
-
-        const droppedFiles = e.dataTransfer.files;
-        if (droppedFiles.length > 0) {
-          const file = droppedFiles[0];
-          if (file.type !== "application/pdf") {
-            alert("Only PDF files are allowed.");
-            return;
-          }
-          fileInput.files = droppedFiles;
-
-          const sizeKB = (file.size / 1024).toFixed(1);
-          fileInfoDiv.textContent = `${file.name} - ${sizeKB}KB`;
+      elements.dropZone.addEventListener("click", () =>
+        elements.fileInput.click(),
+      );
+      elements.dropZone.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          elements.fileInput.click();
         }
       });
 
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (file) {
-          if (file.type !== "application/pdf") {
-            alert("Only PDF files are allowed.");
-            fileInput.value = "";
-            fileInfoDiv.textContent = "";
-            return;
-          }
-          const sizeKB = (file.size / 1024).toFixed(1);
-          fileInfoDiv.textContent = `${file.name} - ${sizeKB}KB`;
-        } else {
-          fileInfoDiv.textContent = "";
-        }
+      elements.dropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        elements.dropZone.classList.add("dragover");
       });
+
+      elements.dropZone.addEventListener("dragleave", () => {
+        elements.dropZone.classList.remove("dragover");
+      });
+
+      elements.dropZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        elements.dropZone.classList.remove("dragover");
+        const file = event.dataTransfer.files[0];
+        if (file) selectFile(file);
+      });
+
+      elements.fileInput.addEventListener("change", () => {
+        const file = elements.fileInput.files[0];
+        if (file) selectFile(file);
+      });
+
+      elements.analyzeButton.addEventListener("click", analyzeSelectedFile);
+      elements.clearButton.addEventListener("click", resetApp);
+
+      function selectFile(file) {
+        clearStatus();
+        elements.results.hidden = true;
+
+        if (file.type !== "application/pdf") {
+          resetFile("Please select a PDF file.");
+          return;
+        }
+
+        if (file.size > MAX_FILE_BYTES) {
+          resetFile(
+            "The PDF is larger than 20MB. Please upload a smaller report.",
+          );
+          return;
+        }
+
+        selectedFile = file;
+        elements.fileInfo.textContent = `${file.name} - ${formatBytes(file.size)}`;
+        elements.clearButton.hidden = false;
+      }
+
+      function resetFile(message) {
+        selectedFile = null;
+        elements.fileInput.value = "";
+        elements.fileInfo.textContent = "No file selected";
+        elements.clearButton.hidden = true;
+        if (message) showStatus(message, "error");
+      }
+
+      function resetApp() {
+        resetFile();
+        clearStatus();
+        elements.results.hidden = true;
+      }
+
+      async function analyzeSelectedFile() {
+        if (!selectedFile) {
+          showStatus("Please upload a PDF before analyzing.", "error");
+          return;
+        }
+
+        setBusy(true);
+        elements.results.hidden = true;
+
+        try {
+          showStatus("Extracting text from the PDF...");
+          const text = await extractTextFromPDF(selectedFile);
+
+          if (text.length < 30) {
+            throw new Error(
+              "The PDF text is too short to analyze. It may be scanned or image-based.",
+            );
+          }
+
+          showStatus("Analyzing the report...");
+          const response = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+
+          const payload = await readJsonResponse(response);
+          if (!response.ok) {
+            throw new Error(
+              payload.error || "The report could not be analyzed.",
+            );
+          }
+
+          renderAnalysis(payload.analysis || {});
+          const truncationNote = payload.truncated
+            ? ` Only the first ${payload.max_report_chars} characters were analyzed.`
+            : "";
+          showStatus(
+            `Analysis complete using ${payload.model}.${truncationNote}`,
+            "success",
+          );
+          elements.results.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        } catch (error) {
+          showStatus(
+            error.message || "Something went wrong while analyzing the report.",
+            "error",
+          );
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function readJsonResponse(response) {
+        try {
+          return await response.json();
+        } catch {
+          return {};
+        }
+      }
 
       async function extractTextFromPDF(file) {
-        const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file))
-          .promise;
-        let text = "";
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map((item) => item.str).join(" ") + "\n";
+        if (!window.pdfjsLib) {
+          throw new Error(
+            "PDF.js failed to load. Please check your internet connection and refresh.",
+          );
         }
-        return text;
-      }
 
-      function formatMarkdownToHTML(text) {
-        text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-        const lines = text.split("\n");
-        let inList = false;
-        let formatted = "";
+        const objectUrl = URL.createObjectURL(file);
 
-        lines.forEach((line) => {
-          if (line.trim().startsWith("* ")) {
-            if (!inList) {
-              formatted += "<ul>";
-              inList = true;
+        try {
+          const pdf = await pdfjsLib.getDocument({ url: objectUrl }).promise;
+          const pages = [];
+
+          for (
+            let pageNumber = 1;
+            pageNumber <= pdf.numPages;
+            pageNumber += 1
+          ) {
+            showStatus(`Reading page ${pageNumber} of ${pdf.numPages}...`);
+            const page = await pdf.getPage(pageNumber);
+            const content = await page.getTextContent();
+            const pageText = content.items
+              .map((item) => item.str || "")
+              .join(" ")
+              .replace(/\s+/g, " ")
+              .trim();
+
+            if (pageText) {
+              pages.push(`Page ${pageNumber}:\n${pageText}`);
             }
-            const item = line.trim().substring(2);
-            formatted += `<li>${item}</li>`;
-          } else {
-            if (inList) {
-              formatted += "</ul>";
-              inList = false;
-            }
-            formatted += line + "<br>";
           }
-        });
 
-        if (inList) formatted += "</ul>";
-        return formatted;
+          const text = pages.join("\n\n").trim();
+          if (!text) {
+            throw new Error(
+              "No selectable text was found in this PDF. OCR support is needed for scanned reports.",
+            );
+          }
+
+          return text;
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
       }
 
-      async function analyze() {
-        const file = fileInput.files[0];
-        const resultBox = document.getElementById("result");
-        if (!file) return alert("Please upload a PDF");
+      function renderAnalysis(analysis) {
+        const summary = analysis.summary || {};
+        renderSummary(summary);
+        renderDetails(elements.patientDetails, analysis.patient || {}, [
+          ["Name", "name"],
+          ["Age", "age"],
+          ["Gender", "gender"],
+          ["Patient ID", "patient_id"],
+          ["Collected", "collected_at"],
+          ["Reported", "reported_at"],
+        ]);
+        renderDetails(elements.providerDetails, analysis.provider || {}, [
+          ["Doctor", "doctor"],
+          ["Facility", "facility"],
+          ["Lab", "lab"],
+          ["Location", "location"],
+        ]);
+        renderFindings(analysis.key_findings || []);
+        renderConcerns(analysis.possible_concerns || []);
+        renderRecommendations(analysis.recommendations || []);
+        renderStringList(
+          elements.urgentFlags,
+          analysis.urgent_flags || [],
+          "No urgent flags were identified from the report text.",
+        );
+        renderStringList(
+          elements.followUpQuestions,
+          analysis.follow_up_questions || [],
+          "No follow-up questions were generated.",
+        );
+        elements.safetyNote.textContent =
+          cleanValue(analysis.safety_note) ||
+          "This AI summary is informational and should be reviewed with a qualified healthcare professional.";
+        elements.results.hidden = false;
+      }
 
-        resultBox.innerHTML = "Extracting the text...";
-        const extractedText = await extractTextFromPDF(file);
+      function renderSummary(summary) {
+        clearElement(elements.summaryGrid);
+        addMetric("Report type", summary.report_type);
+        addMetric("Overall assessment", summary.overall_assessment);
+        addMetric(
+          "Confidence",
+          summary.confidence,
+          createBadge(summary.confidence, "confidence"),
+        );
+        addMetric("Data quality", summary.data_quality);
+      }
 
-        resultBox.innerHTML = "Analyzing....";
-        const response = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: extractedText }),
+      function addMetric(label, value, badge) {
+        const metric = document.createElement("div");
+        metric.className = "metric";
+
+        const labelNode = document.createElement("span");
+        labelNode.className = "metric-label";
+        labelNode.textContent = label;
+
+        const valueNode = document.createElement("div");
+        valueNode.className = "metric-value";
+        if (badge) {
+          valueNode.appendChild(badge);
+        } else {
+          valueNode.textContent = cleanValue(value) || "Not found";
+        }
+
+        metric.append(labelNode, valueNode);
+        elements.summaryGrid.appendChild(metric);
+      }
+
+      function renderDetails(container, data, fields) {
+        clearElement(container);
+        fields.forEach(([label, key]) => {
+          const term = document.createElement("dt");
+          term.textContent = label;
+
+          const description = document.createElement("dd");
+          description.textContent = cleanValue(data[key]) || "Not found";
+
+          container.append(term, description);
+        });
+      }
+
+      function renderFindings(findings) {
+        clearElement(elements.findings);
+
+        if (!findings.length) {
+          elements.findings.appendChild(
+            createEmpty("No key lab findings were extracted."),
+          );
+          return;
+        }
+
+        const wrap = document.createElement("div");
+        wrap.className = "table-wrap";
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const tbody = document.createElement("tbody");
+
+        const headerRow = document.createElement("tr");
+        ["Test", "Value", "Reference", "Status", "Evidence", "Meaning"].forEach(
+          (label) => {
+            const th = document.createElement("th");
+            th.textContent = label;
+            headerRow.appendChild(th);
+          },
+        );
+        thead.appendChild(headerRow);
+
+        findings.forEach((finding) => {
+          const row = document.createElement("tr");
+          addCell(row, finding.test);
+          addCell(row, joinValueUnit(finding.value, finding.unit));
+          addCell(row, finding.reference_range);
+
+          const statusCell = document.createElement("td");
+          statusCell.appendChild(createBadge(finding.status || "unknown"));
+          row.appendChild(statusCell);
+
+          addCell(row, finding.evidence);
+          addCell(row, finding.plain_language_meaning);
+          tbody.appendChild(row);
         });
 
-        const data = await response.json();
-        resultBox.innerHTML = formatMarkdownToHTML(
-          data.response || `Error: ${data.error}`
-        );
+        table.append(thead, tbody);
+        wrap.appendChild(table);
+        elements.findings.appendChild(wrap);
+      }
 
-        const disclaimer = document.createElement("div");
-        disclaimer.className = "disclaimer";
-        disclaimer.innerHTML = `⚠️ <strong>Disclaimer:</strong> This analysis is generated by AI and should not be considered as a replacement for professional medical advice. Please consult with a healthcare provider for proper medical diagnosis and treatment.`;
-        resultBox.appendChild(disclaimer);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+      function renderConcerns(concerns) {
+        clearElement(elements.concerns);
+
+        if (!concerns.length) {
+          elements.concerns.appendChild(
+            createEmpty("No specific possible concerns were identified."),
+          );
+          return;
+        }
+
+        concerns.forEach((concern) => {
+          const item = createListItem({
+            title: concern.issue || "Possible concern",
+            badge: createBadge(concern.risk_level || "unknown", "risk"),
+            lines: [
+              ["Evidence", concern.evidence],
+              ["Discuss", concern.what_to_discuss],
+            ],
+          });
+          elements.concerns.appendChild(item);
+        });
+      }
+
+      function renderRecommendations(recommendations) {
+        clearElement(elements.recommendations);
+
+        if (!recommendations.length) {
+          elements.recommendations.appendChild(
+            createEmpty("No next steps were generated."),
+          );
+          return;
+        }
+
+        recommendations.forEach((recommendation) => {
+          const item = createListItem({
+            title: recommendation.category || "Recommendation",
+            badge: createBadge(recommendation.priority || "routine"),
+            lines: [
+              ["Action", recommendation.recommendation],
+              ["Reason", recommendation.reason],
+            ],
+          });
+          elements.recommendations.appendChild(item);
+        });
+      }
+
+      function renderStringList(container, items, emptyText) {
+        clearElement(container);
+
+        if (!items.length) {
+          container.appendChild(createEmpty(emptyText));
+          return;
+        }
+
+        items.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "list-item item-body";
+          node.textContent = item;
+          container.appendChild(node);
+        });
+      }
+
+      function createListItem({ title, badge, lines }) {
+        const item = document.createElement("article");
+        item.className = "list-item";
+
+        const header = document.createElement("div");
+        header.className = "item-header";
+
+        const titleNode = document.createElement("div");
+        titleNode.className = "item-title";
+        titleNode.textContent = cleanValue(title) || "Item";
+        header.appendChild(titleNode);
+        if (badge) header.appendChild(badge);
+
+        const body = document.createElement("div");
+        body.className = "item-body";
+
+        lines.forEach(([label, value]) => {
+          const line = document.createElement("p");
+          const strong = document.createElement("strong");
+          strong.textContent = `${label}: `;
+          line.append(
+            strong,
+            document.createTextNode(cleanValue(value) || "Not specified"),
+          );
+          body.appendChild(line);
+        });
+
+        item.append(header, body);
+        return item;
+      }
+
+      function createBadge(value, type) {
+        const text = cleanValue(value) || "unknown";
+        const badge = document.createElement("span");
+        const slug = text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        badge.className = `badge ${slug}${type ? `-${type}` : ""}`;
+        badge.textContent = text;
+        return badge;
+      }
+
+      function createEmpty(text) {
+        const node = document.createElement("div");
+        node.className = "empty";
+        node.textContent = text;
+        return node;
+      }
+
+      function addCell(row, value) {
+        const cell = document.createElement("td");
+        cell.textContent = cleanValue(value) || "Not specified";
+        row.appendChild(cell);
+      }
+
+      function joinValueUnit(value, unit) {
+        const cleanValueText = cleanValue(value);
+        const cleanUnitText = cleanValue(unit);
+
+        if (cleanValueText && cleanUnitText)
+          return `${cleanValueText} ${cleanUnitText}`;
+        return cleanValueText || cleanUnitText || "";
+      }
+
+      function showStatus(message, type) {
+        elements.statusBox.textContent = message;
+        elements.statusBox.className = `status visible${type ? ` ${type}` : ""}`;
+      }
+
+      function clearStatus() {
+        elements.statusBox.textContent = "";
+        elements.statusBox.className = "status";
+      }
+
+      function setBusy(isBusy) {
+        elements.analyzeButton.disabled = isBusy;
+        elements.analyzeButton.textContent = isBusy
+          ? "Analyzing..."
+          : "Analyze report";
+      }
+
+      function clearElement(element) {
+        while (element.firstChild) {
+          element.removeChild(element.firstChild);
+        }
+      }
+
+      function cleanValue(value) {
+        return typeof value === "string" ? value.trim() : "";
+      }
+
+      function formatBytes(bytes) {
+        if (!Number.isFinite(bytes)) return "";
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
       }
     </script>
   </body>

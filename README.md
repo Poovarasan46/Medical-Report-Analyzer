@@ -1,84 +1,85 @@
-# Medical-Report-Analyzer
+# Medical Report Analyzer
 
-Medical Report Analyzer is a web-based tool that allows users to upload medical PDFs, extract their content, and generate AI-powered insights using the Groq LLaMA3-70B model. Built with Python (Flask) and deployed on Vercel, it provides a smooth, fast, and privacy-friendly experience for quick medical data understanding.
+Medical Report Analyzer is a Flask web app that reads text from an uploaded medical PDF and sends it to Groq for a structured AI summary. The result is organized into patient details, provider details, key findings, possible concerns, recommended next steps, urgent flags, and questions to discuss with a clinician.
 
----
+This tool is informational only. It is not a diagnosis and should not replace professional medical advice.
 
-## ✨ Features
+## Features
 
-- 🔍 Extracts disease diagnosis from uploaded reports
-- 🧑 Detects patient details like name, age, gender
-- 👨‍⚕️ Identifies doctor/hospital information
-- 🧠 Uses **LLaMA3-70B** via Groq API for natural language analysis
-- 💡 Provides patient instructions and next steps
-- 🖥️ Clean and responsive frontend
-- 🚀 Deployed on Vercel
+- Upload a text-based medical report PDF up to 20MB
+- Extract selectable PDF text in the browser with PDF.js
+- Analyze report text with Groq's OpenAI-compatible chat API
+- Return structured JSON instead of free-form markdown
+- Highlight key lab findings with values, units, reference ranges, status, evidence, and plain-language meaning
+- Separate possible concerns from evidence to reduce overconfident diagnosis-style output
+- Provide follow-up recommendations, urgent flags, and clinician questions
+- Render results safely without injecting model output as raw HTML
 
----
+## Demo
 
-## 📹 Demo
+https://github.com/user-attachments/assets/6c51a9fd-2e67-424f-adb8-789034575fbd
 
-[https://github.com/user-attachments/assets/b5b6fdee-1236-4753-8de1-220ed530eeb4](https://github.com/user-attachments/assets/6c51a9fd-2e67-424f-adb8-789034575fbd)
+## Project Structure
 
----
-
-## 📁 Project Structure
-
-<pre>Medical-report-analyzer-ai/ 
-├── api/
-│   └── index.py # ✅ Your Flask backend 
-│ 
-├── templates/
-│   └── index.html # ✅ Your HTML frontend 
-│ 
-├── requirements.txt 
-├── vercel.json 
-├── .gitignore</pre>
-
-
----
-
-## 📦 Installation (for local dev)
-
-```bash
-git clone https://github.com/Poovarasan46/Medical-Report-Analyzer.git
-cd Medical-Report-Analyzer
-cd api
-pip install -r requirements.txt
-python index.py
-Then open: http://127.0.0.1:5000
+```text
+Medical-Report-Analyzer/
+|-- api/
+|   `-- index.py
+|-- templates/
+|   `-- index.html
+|-- requirements.txt
+|-- vercel.json
+|-- .gitignore
+`-- README.md
 ```
 
-## 🔐 Environment Variables (Vercel)
+## Local Setup
 
-On [Vercel Dashboard](https://vercel.com/dashboard):
-- `GROQ_API_KEY` – your Groq API key
+```bash
+pip install -r requirements.txt
+```
 
-The `.env` file is **not uploaded** to GitHub for security.
+Create a `.env` file in the project root:
 
----
+```env
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.3-70b-versatile
+```
 
-## 🚀 Deployment Steps
+`GROQ_MODEL` is optional. If it is not set, the app uses `llama-3.3-70b-versatile`.
 
-1. Push code to GitHub
-2. Connect repo to [Vercel](https://vercel.com/)
-3. In **Project Settings → Environment Variables**, add your_api_key
-4. Deploy ✅
+Run the app:
 
----
+```bash
+python api/index.py
+```
 
-## 🛠️ Tech Stack
+Open:
 
-- **Python + Flask** – Backend framework for serving the app
-- **HTML + JS + PDF.js** – Frontend interface and PDF processing
-- **Vercel** – Hosting and deployment platform
-- **Groq API (LLaMA3-70B)** – LLM for medical report analysis
+```text
+http://127.0.0.1:5000
+```
 
----
-## 🤝 Acknowledgements
+## Vercel Environment Variables
 
-- [Groq](https://groq.com/)
-- [Vercel](https://vercel.com/)
-- [OpenAI's Chat Completions API Format](https://platform.openai.com/docs/guides/chat)
-- **You** — for reading this 👀
+Set these in the Vercel project settings:
 
+- `GROQ_API_KEY` - required
+- `GROQ_MODEL` - optional
+- `MAX_REPORT_CHARS` - optional, defaults to `45000`
+- `GROQ_TIMEOUT_SECONDS` - optional, defaults to `70`
+- `GROQ_MAX_COMPLETION_TOKENS` - optional, defaults to `4096`
+
+## Deployment
+
+1. Push the latest code to GitHub.
+2. Import the GitHub repository into Vercel.
+3. Add the environment variables above in Vercel project settings.
+4. Deploy from the `main` branch.
+
+## Notes
+
+- Scanned PDFs need OCR before analysis because the browser extractor only reads selectable text.
+- Very long reports are truncated on the server using `MAX_REPORT_CHARS`.
+- The app uses strict JSON schema mode for Groq models that support it, and JSON object mode for broader model compatibility.
+- The server normalizes missing sections before sending data to the UI.
