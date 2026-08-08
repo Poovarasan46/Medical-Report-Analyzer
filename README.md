@@ -17,7 +17,9 @@ This tool is informational only. It is not a diagnosis and should not replace pr
 
 ## Demo
 
-https://github.com/user-attachments/assets/6c51a9fd-2e67-424f-adb8-789034575fbd
+https://github.com/user-attachments/assets/20ccc0cb-99c8-4a27-ad1a-84dcc2897810
+
+
 
 ## Project Structure
 
