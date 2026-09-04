@@ -1,87 +1,103 @@
 # Medical Report Analyzer
 
-Medical Report Analyzer is a Flask web app that reads text from an uploaded medical PDF and sends it to Groq for a structured AI summary. The result is organized into patient details, provider details, key findings, possible concerns, recommended next steps, urgent flags, and questions to discuss with a clinician.
+Medical Report Analyzer is a Flask web app that extracts text from uploaded medical PDF reports and uses **Google Gemini** (`gemini-3.6-flash`) via the official `google-genai` SDK to generate structured, clinical summaries. The result is organized into patient details, provider details, key findings, possible concerns, recommended next steps, urgent flags, and questions to discuss with a healthcare professional.
 
-This tool is informational only. It is not a diagnosis and should not replace professional medical advice.
+> **Disclaimer**: This tool is for informational and educational purposes only. It does not provide medical diagnoses and should never replace professional clinical evaluation or advice.
+
+---
 
 ## Features
 
-- Upload a text-based medical report PDF up to 20MB
-- Extract selectable PDF text in the browser with PDF.js
-- Analyze report text with Groq's OpenAI-compatible chat API
-- Return structured JSON instead of free-form markdown
-- Highlight key lab findings with values, units, reference ranges, status, evidence, and plain-language meaning
-- Separate possible concerns from evidence to reduce overconfident diagnosis-style output
-- Provide follow-up recommendations, urgent flags, and clinician questions
-- Render results safely without injecting model output as raw HTML
+- **PDF Text Extraction**: Extracts selectable text directly in the browser with PDF.js (supporting PDFs up to 20MB).
+- **Google Gemini Integration**: Uses Google's modern `google-genai` SDK and the free, high-performance `gemini-3.6-flash` model.
+- **Strict Structured JSON Schema**: Returns typed JSON matching an exact clinical analysis schema rather than unpredictable raw markdown.
+- **Key Lab & Clinical Findings**: Details values, units, reference ranges, status (normal/abnormal), evidence, and plain-language interpretations.
+- **Evidence-Based Concerns**: Distinguishes tentative concerns from explicit clinical evidence to prevent overconfident conclusions.
+- **Actionable Next Steps**: Outlines follow-up recommendations, urgent flags, and clinician discussion points.
+- **Safe Rendering**: Sanitized rendering prevents XSS vulnerabilities and raw HTML injection.
+- **Vercel Ready**: Optimized for serverless deployment with customized 60-second function timeout for AI analysis.
+
+---
 
 ## Demo
 
 https://github.com/user-attachments/assets/20ccc0cb-99c8-4a27-ad1a-84dcc2897810
 
-
+---
 
 ## Project Structure
 
 ```text
 Medical-Report-Analyzer/
 |-- api/
-|   `-- index.py
+|   `-- index.py          # Flask backend & Gemini API integration
 |-- templates/
-|   `-- index.html
-|-- requirements.txt
-|-- vercel.json
+|   `-- index.html        # Responsive frontend with PDF.js & UI
+|-- requirements.txt      # Python dependencies (google-genai, Flask, etc.)
+|-- vercel.json           # Vercel serverless configuration & 60s timeout
 |-- .gitignore
 `-- README.md
 ```
 
+---
+
 ## Local Setup
 
+### 1. Clone the repository
+```bash
+git clone https://github.com/Poovarasan46/Medical-Report-Analyzer.git
+cd Medical-Report-Analyzer
+```
+
+### 2. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
+### 3. Configure Environment Variables
 Create a `.env` file in the project root:
 
 ```env
-GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-3.6-flash
 ```
 
-`GROQ_MODEL` is optional. If it is not set, the app uses `llama-3.3-70b-versatile`.
+> **Note**: Get a free API key at [Google AI Studio](https://aistudio.google.com/app/apikey). `GEMINI_MODEL` is optional and defaults to `gemini-3.6-flash`.
 
-Run the app:
-
+### 4. Run the application
 ```bash
 python api/index.py
 ```
 
-Open:
-
+Open your browser and navigate to:
 ```text
 http://127.0.0.1:5000
 ```
 
-## Vercel Environment Variables
+---
 
-Set these in the Vercel project settings:
+## Vercel Deployment
 
-- `GROQ_API_KEY` - required
-- `GROQ_MODEL` - optional
-- `MAX_REPORT_CHARS` - optional, defaults to `45000`
-- `GROQ_TIMEOUT_SECONDS` - optional, defaults to `70`
-- `GROQ_MAX_COMPLETION_TOKENS` - optional, defaults to `4096`
+### 1. Environment Variables in Vercel
+In your Vercel project dashboard under **Settings** > **Environment Variables**, add:
 
-## Deployment
+| Variable | Required | Default | Description |
+| :--- | :---: | :---: | :--- |
+| `GEMINI_API_KEY` | **Yes** | — | Your API key from Google AI Studio |
+| `GEMINI_MODEL` | No | `gemini-3.6-flash` | The Gemini model to use |
+| `MAX_REPORT_CHARS` | No | `45000` | Max characters sent to the model |
+| `GEMINI_MAX_COMPLETION_TOKENS` | No | `8192` | Max token response length |
 
-1. Push the latest code to GitHub.
-2. Import the GitHub repository into Vercel.
-3. Add the environment variables above in Vercel project settings.
+### 2. Deployment Steps
+1. Push your repository to GitHub.
+2. Import the repository into [Vercel](https://vercel.com).
+3. Add the `GEMINI_API_KEY` in **Environment Variables**.
 4. Deploy from the `main` branch.
 
-## Notes
+---
 
-- Scanned PDFs need OCR before analysis because the browser extractor only reads selectable text.
-- Very long reports are truncated on the server using `MAX_REPORT_CHARS`.
-- The app uses strict JSON schema mode for Groq models that support it, and JSON object mode for broader model compatibility.
-- The server normalizes missing sections before sending data to the UI.
+## Notes & Limitations
+
+- **Text-based PDFs only**: Scanned documents or image-only PDFs require OCR prior to analysis, as browser-based PDF.js extracts digital text.
+- **Report Size**: Reports exceeding `MAX_REPORT_CHARS` (45,000 characters) are safely truncated to remain within token limits.
+- **Resilient Fallback**: The backend automatically normalizes missing or partial schema fields before returning the response to the user.
