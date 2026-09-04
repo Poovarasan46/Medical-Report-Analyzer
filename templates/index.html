@@ -727,7 +727,13 @@
         try {
           return await response.json();
         } catch {
-          return {};
+          try {
+            const rawText = await response.text();
+            if (rawText) {
+              return { error: `Server error (${response.status}): ${rawText.slice(0, 150)}` };
+            }
+          } catch {}
+          return { error: `Server error (${response.status}: ${response.statusText || "Request failed"})` };
         }
       }
 

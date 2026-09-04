@@ -302,9 +302,10 @@ def analyze():
                 "error": "No readable report text received."
             }), 400
 
-        if not GEMINI_API_KEY:
+        api_key = os.getenv("GEMINI_API_KEY") or GEMINI_API_KEY
+        if not api_key:
             return jsonify({
-                "error": "Gemini API key missing."
+                "error": "Gemini API key missing. Please set GEMINI_API_KEY in Vercel Environment Variables."
             }), 500
 
         if len(report_text) > MAX_REPORT_CHARS:
@@ -315,9 +316,10 @@ def analyze():
 
         analysis = analyze_report_with_gemini(report_text)
 
+        active_model = os.getenv("GEMINI_MODEL", "").strip() or GEMINI_MODEL or DEFAULT_GEMINI_MODEL
         return jsonify({
             "analysis": analysis,
-            "model": GEMINI_MODEL,
+            "model": active_model,
             "truncated": truncated,
             "max_report_chars": MAX_REPORT_CHARS
         })
@@ -334,14 +336,19 @@ def analyze():
 def analyze_report_with_gemini(report_text):
     print("Preparing request...")
     
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    api_key = os.getenv("GEMINI_API_KEY") or GEMINI_API_KEY
+    if not api_key:
+        raise GeminiAPIError("GEMINI_API_KEY is not configured.", 500)
+
+    client = genai.Client(api_key=api_key)
+    active_model = os.getenv("GEMINI_MODEL", "").strip() or GEMINI_MODEL or DEFAULT_GEMINI_MODEL
     
     prompt = SYSTEM_PROMPT + "\n\n" + RESPONSE_SHAPE_PROMPT + "\n\nREPORT TEXT:\n" + report_text
 
-    print("Sending request to Gemini...")
+    print(f"Sending request to Gemini model: {active_model}...")
     try:
         response = client.models.generate_content(
-            model=GEMINI_MODEL,
+            model=active_model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
