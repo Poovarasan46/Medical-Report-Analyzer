@@ -7,10 +7,11 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
+from google import genai
+from google.genai import types
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,19 +20,15 @@ load_dotenv(BASE_DIR / ".env")
 app = Flask(__name__, template_folder="../templates")
 CORS(app)
 
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
-GROQ_MODEL = os.getenv("GROQ_MODEL", "").strip() or DEFAULT_GROQ_MODEL
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "").strip() or DEFAULT_GEMINI_MODEL
 MAX_REPORT_CHARS = int(os.getenv("MAX_REPORT_CHARS", "45000"))
-REQUEST_TIMEOUT_SECONDS = int(os.getenv("GROQ_TIMEOUT_SECONDS", "70"))
-MAX_COMPLETION_TOKENS = int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", "4096"))
-STRICT_SCHEMA_MODELS = {"openai/gpt-oss-20b", "openai/gpt-oss-120b"}
+MAX_COMPLETION_TOKENS = int(os.getenv("GEMINI_MAX_COMPLETION_TOKENS", "8192"))
 
 
 ANALYSIS_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": False,
     "required": [
         "summary",
         "patient",
@@ -46,7 +43,6 @@ ANALYSIS_SCHEMA: dict[str, Any] = {
     "properties": {
         "summary": {
             "type": "object",
-            "additionalProperties": False,
             "required": [
                 "report_type",
                 "overall_assessment",
@@ -65,7 +61,6 @@ ANALYSIS_SCHEMA: dict[str, Any] = {
         },
         "patient": {
             "type": "object",
-            "additionalProperties": False,
             "required": ["name", "age", "gender", "patient_id", "collected_at", "reported_at"],
             "properties": {
                 "name": {"type": "string"},
@@ -78,7 +73,6 @@ ANALYSIS_SCHEMA: dict[str, Any] = {
         },
         "provider": {
             "type": "object",
-            "additionalProperties": False,
             "required": ["doctor", "facility", "lab", "location"],
             "properties": {
                 "doctor": {"type": "string"},
@@ -91,7 +85,6 @@ ANALYSIS_SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {
                 "type": "object",
-                "additionalProperties": False,
                 "required": [
                     "test",
                     "value",
@@ -119,7 +112,6 @@ ANALYSIS_SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {
                 "type": "object",
-                "additionalProperties": False,
                 "required": ["issue", "risk_level", "evidence", "what_to_discuss"],
                 "properties": {
                     "issue": {"type": "string"},
@@ -136,7 +128,6 @@ ANALYSIS_SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {
                 "type": "object",
-                "additionalProperties": False,
                 "required": ["priority", "category", "recommendation", "reason"],
                 "properties": {
                     "priority": {
@@ -273,7 +264,7 @@ Return exactly this JSON shape. Use empty strings or empty arrays when informati
 """
 
 
-class GroqAPIError(Exception):
+class GeminiAPIError(Exception):
     def __init__(self, message: str, status_code: int = 502):
         super().__init__(message)
         self.status_code = status_code
@@ -289,8 +280,8 @@ def health():
     return jsonify(
         {
             "ok": True,
-            "model": GROQ_MODEL,
-            "groq_key_configured": bool(GROQ_API_KEY),
+            "model": GEMINI_MODEL,
+            "gemini_key_configured": bool(GEMINI_API_KEY),
         }
     )
 
@@ -311,9 +302,9 @@ def analyze():
                 "error": "No readable report text received."
             }), 400
 
-        if not GROQ_API_KEY:
+        if not GEMINI_API_KEY:
             return jsonify({
-                "error": "Groq API key missing."
+                "error": "Gemini API key missing."
             }), 500
 
         if len(report_text) > MAX_REPORT_CHARS:
@@ -322,11 +313,11 @@ def analyze():
         else:
             truncated = False
 
-        analysis = analyze_report_with_groq(report_text)
+        analysis = analyze_report_with_gemini(report_text)
 
         return jsonify({
             "analysis": analysis,
-            "model": GROQ_MODEL,
+            "model": GEMINI_MODEL,
             "truncated": truncated,
             "max_report_chars": MAX_REPORT_CHARS
         })
@@ -340,96 +331,35 @@ def analyze():
         }), 500
 
 
-def analyze_report_with_groq(report_text):
-
+def analyze_report_with_gemini(report_text):
     print("Preparing request...")
+    
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    
+    prompt = SYSTEM_PROMPT + "\n\n" + RESPONSE_SHAPE_PROMPT + "\n\nREPORT TEXT:\n" + report_text
 
-    messages = [
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT
-        },
-        {
-            "role": "user",
-            "content":
-                RESPONSE_SHAPE_PROMPT +
-                "\n\nREPORT TEXT:\n" +
-                report_text
-        }
-    ]
-
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": messages,
-        "temperature": 0.1,
-        "max_completion_tokens": MAX_COMPLETION_TOKENS
-    }
-
-    print("Sending request to Groq...")
-
-    result = create_chat_completion(payload)
+    print("Sending request to Gemini...")
+    try:
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=ANALYSIS_SCHEMA,
+                temperature=0.1,
+                max_output_tokens=MAX_COMPLETION_TOKENS,
+            ),
+        )
+    except Exception as e:
+        raise GeminiAPIError(f"Gemini API error: {str(e)}")
 
     print("Response received.")
-
-    content = result["choices"][0]["message"]["content"]
-
+    
+    content = response.text
     print(content[:300])
 
     parsed = parse_json_response(content)
-
     return normalize_analysis(parsed)
-
-
-def build_response_format(model: str) -> dict[str, Any]:
-    if model in STRICT_SCHEMA_MODELS:
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "medical_report_analysis",
-                "strict": True,
-                "schema": ANALYSIS_SCHEMA,
-            },
-        }
-
-    return {"type": "json_object"}
-
-
-def create_chat_completion(payload):
-
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    print("Calling Groq...")
-
-    response = requests.post(
-        GROQ_API_URL,
-        headers=headers,
-        json=payload,
-        timeout=70
-    )
-
-    print("Status:", response.status_code)
-
-    print(response.text[:1000])
-
-    if response.status_code != 200:
-        raise Exception(response.text)
-
-    return response.json()
-
-def extract_groq_error(response: requests.Response) -> str:
-    try:
-        body = response.json()
-    except ValueError:
-        return f"AI service error ({response.status_code})."
-
-    message = body.get("error", {}).get("message") or body.get("message")
-    if message:
-        return f"AI service error: {message}"
-
-    return f"AI service error ({response.status_code})."
 
 
 def normalize_report_text(value: Any) -> str:
@@ -444,21 +374,21 @@ def normalize_report_text(value: Any) -> str:
 
 def parse_json_response(content: str) -> dict[str, Any]:
     if not content:
-        raise GroqAPIError("The AI service returned an empty response.", 502)
+        raise GeminiAPIError("The AI service returned an empty response.", 502)
 
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
         match = re.search(r"\{.*\}", content, flags=re.DOTALL)
         if not match:
-            raise GroqAPIError("The AI service returned an unreadable response.", 502)
+            raise GeminiAPIError("The AI service returned an unreadable response.", 502)
         try:
             parsed = json.loads(match.group(0))
         except json.JSONDecodeError as exc:
-            raise GroqAPIError("The AI service returned malformed JSON.", 502) from exc
+            raise GeminiAPIError("The AI service returned malformed JSON.", 502) from exc
 
     if not isinstance(parsed, dict):
-        raise GroqAPIError("The AI service returned an invalid response shape.", 502)
+        raise GeminiAPIError("The AI service returned an invalid response shape.", 502)
 
     return parsed
 
